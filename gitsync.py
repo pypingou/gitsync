@@ -126,7 +126,7 @@ class Settings(object):
         :arg sec, section of the configuration retrieved.
         """
         parser = ConfigParser.ConfigParser()
-        configfile = os.path.join(os.environ['HOME'], configFile)
+        configfile = os.path.join(os.environ['HOME'], configfile)
         isNew = self.create_conf(configfile)
         parser.read(configfile)
         if not parser.has_section(sec):
