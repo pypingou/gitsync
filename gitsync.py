@@ -112,9 +112,12 @@ class Settings(object):
         This instanciate the Settings object and load into the _dict
         attributes the default configuration which each available option.
         """
-        self._dict = {'work_dir' : self.work_dir,
+        self._dict = {'work_dir': self.work_dir,
                      }
-        self.load_config('.config/gitsync/settings', 'gitsync')
+                     
+        self.load_config(os.path.join(
+                            os.environ['HOME'], '.config', 'gitsync'
+                            ), 'gitsync')
 
     def load_config(self, configfile, sec):
         """Load the configuration in memory.
@@ -123,7 +126,7 @@ class Settings(object):
         :arg sec, section of the configuration retrieved.
         """
         parser = ConfigParser.ConfigParser()
-        configfile = os.environ['HOME'] + "/" + configfile
+        configfile = os.path.join(os.environ['HOME'], configFile)
         isNew = self.create_conf(configfile)
         parser.read(configfile)
         if not parser.has_section(sec):
