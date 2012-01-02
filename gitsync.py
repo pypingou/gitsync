@@ -17,7 +17,7 @@
 """
 
 
-from git import *
+from git import Repo, InvalidGitRepositoryError
 from time import gmtime, strftime
 import ConfigParser
 import logging
@@ -27,11 +27,11 @@ import sys
 
 # Initial simple logging stuff
 logging.basicConfig()
-log = logging.getLogger('gitsync')
+LOG = logging.getLogger('gitsync')
 if '--debug' in sys.argv:
-    log.setLevel(logging.DEBUG)
+    LOG.setLevel(logging.DEBUG)
 elif '--verbose' in sys.argv:
-    log.setLevel(logging.INFO)
+    LOG.setLevel(logging.INFO)
 
 
 class GitSync(object):
@@ -40,7 +40,7 @@ class GitSync(object):
     """
 
     def __init__(self):
-        self.log = log
+        self.log = LOG
         self.settings = Settings()
         if not self.settings.work_dir:
             raise GitSyncError(
@@ -154,7 +154,7 @@ class Settings(object):
         write down.
         """
         with open(configfile, 'w') as conf:
-                parser.write(conf)
+            parser.write(conf)
 
     def __getitem__(self, key):
         hash = self._get_hash(key)
@@ -162,7 +162,7 @@ class Settings(object):
             raise KeyError(key)
         return self._dict.get(hash)
 
-    def populate(self,parser, section):
+    def populate(self, parser, section):
         """Set option values from a INI file section.
 
         :arg parser: ConfigParser instance (or subclass)
