@@ -67,7 +67,6 @@ class GitSync(object):
         if repo.is_dirty():
             self.log.info('Repo is dirty, processing files')
             docommit = True
-            print index.diff()
             for (path, stage), entry in index.entries.iteritems():
                 path = repo.working_dir + '/' + path
                 if os.path.exists(path):
