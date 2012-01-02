@@ -86,7 +86,7 @@ class GitSync(object):
             origin = repo.remotes.origin
             ## fetch, pull and push from and to the remote
             origin.fetch()
-            origin.pull()
+            origin.pull(rebase=True)
             origin.push()
 
 
