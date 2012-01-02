@@ -17,7 +17,7 @@
 """
 
 
-from git import Repo, InvalidGitRepositoryError
+from git import Repo, InvalidGitRepositoryError, GitCommandError
 from time import gmtime, strftime
 import ConfigParser
 import logging
@@ -51,7 +51,7 @@ class GitSync(object):
                 self.settings.work_dir)
         try:
             repo = Repo(self.settings.work_dir)
-        except InvalidGitRepositoryError, err:
+        except InvalidGitRepositoryError:
             raise GitSyncError(
                 'The indicated working directory is not a valid git '\
                 'repository: %s' %
@@ -87,7 +87,11 @@ class GitSync(object):
             ## fetch, pull and push from and to the remote
             origin.fetch()
             origin.pull(rebase=True)
-            origin.push()
+            try:
+                origin.push()
+            except GitCommandError:
+                raise GitSyncError(
+                'Could not push into the remote repository')
 
 
 class GitSyncError(Exception):
