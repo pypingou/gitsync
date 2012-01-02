@@ -1,0 +1,59 @@
+GitSync
+======
+
+GitSync aims at providing an automated git-based synchronisation.
+Embedded in a scheduler (such as cron) it watchs the content of a
+folder and add/remove/commit the changes which are made there.
+
+This way it kind of provide a similar service then dropbox or
+sparkleshare but:
+- in python (no mono-pile to install)
+- in cron (set your frequency as desired)
+- in git (get real track changes).
+
+INSTALL
+======
+
+== Install the program
+
+The easiest way is just to clone the git repo and make a link from ~/bin
+or /usr/local/bin to the gitsync.py file.
+At the moment the project does not provide any setup.py but eventually
+that will change.
+
+== Configure the program
+
+You will need to specify in "~/.config/gitsync" the directory that you
+want gitsync to watch (that will be the work_dir option).
+This directory should contain a git repository (cloned from a remote
+origin or just local).
+
+Then you can add the scheduler job, for example using cron, to run the
+synchronisation every 5 minutes:
+*/5 * * * * /home/user/bin/gitsync.py
+or
+*/5 * * * * /usr/local/bin/gitsync.py
+
+You may want to add --verbose to get some output and eventually use
+cron to send you an email with that output. It is now up to you ;-)
+
+
+My workflow here would be something like:
+1) setup gitolite
+2) create the repo in gitolite
+3) clone it
+4) setup gitsync on machine A pointing to the clone checked-out
+5) repeat step 4 on the other machines
+6) enjoy* ;-)
+
+
+====================================================================
+/!\  Please note that if one file is changed on two systems at once,
+there will likely be a conflict in git. If gitsync cannot push to
+the remote repo, it will say so and that will be up to you to fix
+the git repo.
+====================================================================
+
+* This program is bug free of course but may contain some random features
+if you face one of them and can reproduce it, please let us know. We will
+decide wether to keep it or not ;-)
