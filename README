@@ -1,8 +1,8 @@
 GitSync
 ======
 
-GitSync aims at providing an automated git-based synchronisation.
-Embedded in a scheduler (such as cron) it watchs the content of a
+GitSync aims at providing an automated git-based synchronization.
+Embedded in a scheduler (such as cron) it watch the content of a
 folder and add/remove/commit the changes which are made there.
 
 This way it kind of provide a similar service then dropbox or
