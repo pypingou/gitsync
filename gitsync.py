@@ -44,7 +44,7 @@ class GitSync(object):
         self.settings = Settings()
         if not self.settings.work_dir:
             raise GitSyncError(
-                'No git repository set in ~/.config/gitsync/settings')
+                'No git repository set in ~/.config/gitsync')
         if not os.path.exists(self.settings.work_dir):
             raise GitSyncError(
                 'The indicated working directory does not exists: %s' %
