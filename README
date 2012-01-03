@@ -34,10 +34,12 @@ Install the resulting RPM via yum install <path/to/rpm>.
 
 == Configure the program
 
-You will need to specify in "~/.config/gitsync" the directory that you
+You will need to specify in "~/.config/gitsync" the directories that you
 want gitsync to watch (that will be the work_dir option).
-This directory should contain a git repository (cloned from a remote
-origin or just local).
+Each directory should contain a git repository (cloned from a remote
+origin or just local) and will be separated by a comma ',' in the list.
+ei:
+  work_dir = /home/user/Notes, /home/user/Articles, /home/user/Scripts
 
 Then you can add the scheduler job, for example using cron, to run the
 synchronisation every 5 minutes:
