@@ -14,12 +14,23 @@ sparkleshare but:
 INSTALL
 ======
 
+== Dependencies
+
+* Python2
+    (tested on 2.6.6)
+* GitPython 0.3.2
+
 == Install the program
 
+=== Link from git
 The easiest way is just to clone the git repo and make a link from ~/bin
 or /usr/local/bin to the gitsync.py file.
 At the moment the project does not provide any setup.py but eventually
 that will change.
+
+=== Via rpm.
+Make a tarball of the project and run rpmbuild -ts <tarball>.
+Install the resulting RPM via yum install <path/to/rpm>.
 
 == Configure the program
 
