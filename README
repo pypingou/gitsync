@@ -55,9 +55,11 @@ My workflow here would be something like:
 1) setup gitolite
 2) create the repo in gitolite
 3) clone it
-4) setup gitsync on machine A pointing to the clone checked-out
-5) repeat step 4 on the other machines
-6) enjoy* ;-)
+4) create the first commit by hand and push it to the remote repo
+   (this will create the master branch, needed by gitsync)
+5) setup gitsync on machine A pointing to the clone checked-out
+6) repeat step 4 on the other machines
+7) enjoy* ;-)
 
 
 ====================================================================
