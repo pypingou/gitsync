@@ -13,8 +13,7 @@ URL:            http://ambre.pingoured.fr/cgit/gitsync.git
 # cd gitsync && git archive --format=tar --prefix=gitsync-0.0.1/ fd39ef44ed57a4ede4f586a852598479efa9db13 > ../gitsync-20120102.tar.bz2
 Source0:        gitsync-%{alphatag}.tar.bz2
 
-Requires:       git
-Requires:       python
+Requires:       GitPython
 
 BuildArch:      noarch
 BuildRequires:  python-devel
