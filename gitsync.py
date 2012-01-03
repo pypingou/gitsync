@@ -56,8 +56,17 @@ class GitSync(object):
                 'The indicated working directory is not a valid git '\
                 'repository: %s' %
                 self.settings.work_dir)
+
         index = repo.index
         docommit = False
+        origin = None
+
+        if repo.remotes and repo.remotes.origin:
+            origin = repo.remotes.origin
+            ## fetch and pull/rebase from the remote
+            origin.fetch()
+            origin.pull(rebase=True)
+
         ## Add all untracked files
         if repo.untracked_files:
             self.log.info('Adding files %s' % repo.untracked_files)
@@ -79,19 +88,15 @@ class GitSync(object):
                 gmtime())
             self.log.info('Doing commit: %s' % msg)
             index.commit(msg)
+            ## if there is a remote, push to it
+            if origin:
+                try:
+                    origin.push()
+                except GitCommandError:
+                    raise GitSyncError(
+                    'Could not push into the remote repository')
         else:
             self.log.info('No changes found')
-
-        if docommit and repo.remotes and repo.remotes.origin:
-            origin = repo.remotes.origin
-            ## fetch, pull and push from and to the remote
-            origin.fetch()
-            origin.pull(rebase=True)
-            try:
-                origin.push()
-            except GitCommandError:
-                raise GitSyncError(
-                'Could not push into the remote repository')
 
 
 class GitSyncError(Exception):
