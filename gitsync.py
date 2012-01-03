@@ -45,17 +45,27 @@ class GitSync(object):
         if not self.settings.work_dir:
             raise GitSyncError(
                 'No git repository set in ~/.config/gitsync')
-        if not os.path.exists(self.settings.work_dir):
+        for repo in self.settings.work_dir.split(','):
+            self.update_repo(repo.strip())
+
+    def update_repo(self, reponame):
+        """ For a given path to a repo, pull/rebase the last changes if
+        it can, add/remove/commit the new changes and push them to the
+        remote repo if any.
+
+        :kwarg reponame, full path to a git repo.
+        """
+        if not os.path.exists(reponame):
             raise GitSyncError(
                 'The indicated working directory does not exists: %s' %
-                self.settings.work_dir)
+                reponame)
         try:
-            repo = Repo(self.settings.work_dir)
+            repo = Repo(reponame)
         except InvalidGitRepositoryError:
             raise GitSyncError(
                 'The indicated working directory is not a valid git '\
                 'repository: %s' %
-                self.settings.work_dir)
+                reponame)
 
         index = repo.index
         docommit = False
@@ -65,7 +75,8 @@ class GitSync(object):
             origin = repo.remotes.origin
             ## fetch and pull/rebase from the remote
             origin.fetch()
-            origin.pull(rebase=True)
+            if not repo.is_dirty():
+                origin.pull(rebase=True)
 
         ## Add all untracked files
         if repo.untracked_files:
