@@ -74,9 +74,12 @@ class GitSync(object):
         if repo.remotes and repo.remotes.origin:
             origin = repo.remotes.origin
             ## fetch and pull/rebase from the remote
-            origin.fetch()
-            if not repo.is_dirty():
-                origin.pull(rebase=True)
+            try:
+                origin.fetch()
+                if not repo.is_dirty():
+                    origin.pull(rebase=True)
+            except AssertionError:
+                print 'Could not fetch from the remote repository'
 
         ## Add all untracked files
         if repo.untracked_files:
