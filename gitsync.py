@@ -35,6 +35,8 @@ elif '--verbose' in sys.argv:
 
 SETTINGS_FILE = os.path.join(os.environ['HOME'], '.config',
                     'gitsync')
+OFFLINE_FILE = os.path.join(os.environ['HOME'], '.config',
+                    'gitsync.offline')
 
 
 class GitSync(object):
@@ -83,8 +85,12 @@ class GitSync(object):
                 origin.fetch()
                 if not repo.is_dirty():
                     origin.pull(rebase=True)
+                if os.path.exists(OFFLINE_FILE):
+                    os.remove(OFFLINE_FILE)
             except AssertionError:
-                print 'Could not fetch from the remote repository'
+                if not os.path.exists(OFFLINE_FILE):
+                    open(OFFLINE_FILE, 'w')
+                    print 'Could not fetch from the remote repository'
 
         ## Add all untracked files
         if repo.untracked_files:
