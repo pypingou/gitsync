@@ -46,7 +46,8 @@ class GitSync(object):
             raise GitSyncError(
                 'No git repository set in ~/.config/gitsync')
         for repo in self.settings.work_dir.split(','):
-            self.update_repo(repo.strip())
+            if repo.strip():
+                self.update_repo(repo.strip())
 
     def update_repo(self, reponame):
         """ For a given path to a repo, pull/rebase the last changes if
@@ -55,6 +56,7 @@ class GitSync(object):
 
         :kwarg reponame, full path to a git repo.
         """
+        self.log.info('Processing %s' % reponame)
         if not os.path.exists(reponame):
             raise GitSyncError(
                 'The indicated working directory does not exists: %s' %
