@@ -47,7 +47,7 @@ class GitSync(object):
                 'No git repository set in ~/.config/gitsync')
         for repo in self.settings.work_dir.split(','):
             if repo.strip():
-                self.update_repo(repo.strip())
+                self.update_repo(os.path.expanduser(repo.strip()))
 
     def update_repo(self, reponame):
         """ For a given path to a repo, pull/rebase the last changes if
