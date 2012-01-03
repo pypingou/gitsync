@@ -91,6 +91,7 @@ class GitSync(object):
             ## if there is a remote, push to it
             if origin:
                 try:
+                    origin.pull(rebase=True)
                     origin.push()
                 except GitCommandError:
                     raise GitSyncError(
