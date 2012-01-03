@@ -2,7 +2,7 @@
 
 Name:           gitsync
 Version:        0.0.1
-Release:        0.1.%{alphatag}git%{?dist}
+Release:        0.2.%{alphatag}git%{?dist}
 Summary:        Automated git-based synchronization
 
 License:        GPLv3+
@@ -50,5 +50,8 @@ install -m 755 %{name}.py %{buildroot}%{_bindir}/%{name}
 
 
 %changelog
+* Tue Jan 03 2012 Pierre-Yves Chibon <pingou AT pingoured DOT fr> - 0.0.1-0.2.20120102git
+- Fix the Requires of the spec (to GitPython which will bring git and python)
+
 * Mon Jan 02 2012 Johan Cwiklinski <johan AT x-tnd DOT be> - 0.0.1-0.1.20120102git
 - First SPEC draft
