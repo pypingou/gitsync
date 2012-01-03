@@ -33,6 +33,9 @@ if '--debug' in sys.argv:
 elif '--verbose' in sys.argv:
     LOG.setLevel(logging.INFO)
 
+SETTINGS_FILE = os.path.join(os.environ['HOME'], '.config',
+                    'gitsync')
+
 
 class GitSync(object):
     """ Main class of the project, handles the command line arguments,
@@ -44,7 +47,7 @@ class GitSync(object):
         self.settings = Settings()
         if not self.settings.work_dir:
             raise GitSyncError(
-                'No git repository set in ~/.config/gitsync')
+                'No git repository set in %s' % SETTINGS_FILE)
         for repo in self.settings.work_dir.split(','):
             if repo.strip():
                 self.update_repo(os.path.expanduser(repo.strip()))
@@ -140,10 +143,7 @@ class Settings(object):
         """
         self._dict = {'work_dir': self.work_dir,
                      }
-                     
-        self.load_config(os.path.join(
-                            os.environ['HOME'], '.config', 'gitsync'
-                            ), 'gitsync')
+        self.load_config(SETTINGS_FILE, 'gitsync')
 
     def load_config(self, configfile, sec):
         """Load the configuration in memory.
