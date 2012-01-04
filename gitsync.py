@@ -114,7 +114,7 @@ class GitSync(object):
             self.log.info('Doing commit: %s' % msg)
             index.commit(msg)
             ## if there is a remote, push to it
-            if origin:
+            if origin and os.path.exists(OFFLINE_FILE):
                 try:
                     origin.pull(rebase=True)
                     origin.push()
