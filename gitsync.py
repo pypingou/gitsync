@@ -91,6 +91,8 @@ class GitSync(object):
                 if not os.path.exists(OFFLINE_FILE):
                     open(OFFLINE_FILE, 'w')
                     print 'Could not fetch from the remote repository'
+                else:
+                    self.log.info('Could not fetch from the remote repository')
 
         ## Add all untracked files
         if repo.untracked_files:
