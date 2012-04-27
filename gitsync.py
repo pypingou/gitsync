@@ -28,9 +28,9 @@ import sys
 # Initial simple logging stuff
 logging.basicConfig()
 LOG = logging.getLogger('gitsync')
-if '--debug' in sys.argv:
+if '--debug' in sys.argv or '-d' in sys.argv:
     LOG.setLevel(logging.DEBUG)
-elif '--verbose' in sys.argv:
+elif '--verbose' in sys.argv or '-v' in sys.argv:
     LOG.setLevel(logging.INFO)
 
 SETTINGS_FILE = os.path.join(os.environ['HOME'], '.config',
