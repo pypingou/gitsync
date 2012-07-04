@@ -17,7 +17,9 @@
 """
 
 
-from git import Repo, InvalidGitRepositoryError, GitCommandError
+from dulwich.client import get_transport_and_path
+from dulwich.repo import Repo
+
 from time import gmtime, strftime
 import ConfigParser
 import logging
@@ -74,47 +76,39 @@ class GitSync(object):
                 'repository: %s' %
                 reponame)
 
-        index = repo.index
         docommit = False
         origin = None
+        conf = repo.get_config()
+        remote_url = conf.get(("remote", "origin"), "url")
 
-        if repo.remotes and repo.remotes.origin:
-            origin = repo.remotes.origin
-            ## fetch and pull/rebase from the remote
-            try:
-                origin.fetch()
-                if not repo.is_dirty():
-                    origin.pull(rebase=True)
-                if os.path.exists(OFFLINE_FILE):
-                    os.remove(OFFLINE_FILE)
-            except AssertionError:
-                if not os.path.exists(OFFLINE_FILE):
-                    open(OFFLINE_FILE, 'w')
-                    print 'Could not fetch from the remote repository'
-                else:
+        client, path = get_transport_and_path(remote_url)
+        ## fetch and pull/rebase from the remote
+        try:
+            client.fetch(path, repo)
+        except AssertionError:
+            if not os.path.exists(OFFLINE_FILE):
+                open(OFFLINE_FILE, 'w')
+                print 'Could not fetch from the remote repository'
+            else:
                     self.log.info('Could not fetch from the remote repository')
 
         ## Add all untracked files
-        if repo.untracked_files:
-            self.log.info('Adding files %s' % repo.untracked_files)
-            index.add(repo.untracked_files)
+        repo_files = [entry.path for entry in repo.object_store.iter_tree_contents(repo["HEAD"].tree)]
+        fs_files =  [os.path.join(path, filename) for path, dirname, filenam in os.walk(repo.path) for filename in filenam]
+        untracked_files = set(fs_files).intersection(set(repo_files))
+        if untracked_files:
+            self.log.info('Adding files %s' % untracked_files)
+            repo.stage(untracked_files)
             docommit = True
         ## Add all files changed
-        if repo.is_dirty():
-            self.log.info('Repo is dirty, processing files')
-            docommit = True
-            for (path, stage), entry in index.entries.iteritems():
-                path = repo.working_dir + '/' + path
-                if os.path.exists(path):
-                    index.add([path])
-                else:
-                    index.remove([path])
+        self.log.info('Repo is dirty, processing files')
+        repo.stage(repo_files)
 
         if docommit:
             msg = strftime('Commit: %a, %d %b %Y %H:%M:%S +0000',
                 gmtime())
             self.log.info('Doing commit: %s' % msg)
-            index.commit(msg)
+            repo.do_commit(msg)
             ## if there is a remote, push to it
             if origin and not os.path.exists(OFFLINE_FILE):
                 try:
@@ -221,6 +215,7 @@ class Settings(object):
 
 
 if __name__ == '__main__':
+    LOG.setLevel(logging.DEBUG)
     try:
         GitSync()
     except GitSyncError, msg:
