@@ -17,11 +17,13 @@
 """
 
 
-from git import Repo, InvalidGitRepositoryError, GitCommandError
-from time import gmtime, strftime
+from pygit2 import Repository, Signature
+from pygit2 import GIT_STATUS_WT_NEW, GIT_STATUS_WT_DELETED, GIT_STATUS_WT_MODIFIED
+from time import gmtime, strftime, time
 import ConfigParser
 import logging
 import os
+import subprocess
 import sys
 
 
@@ -37,6 +39,36 @@ SETTINGS_FILE = os.path.join(os.environ['HOME'], '.config',
                     'gitsync')
 OFFLINE_FILE = os.path.join(os.environ['HOME'], '.config',
                     'gitsync.offline')
+
+
+def run_pull_rebase(repo_path):
+    """ Run the git pull --rebase command and react accordingly to the
+    success of the task.
+    """
+    cwd = os.getcwd()
+    os.chdir(repo_path)
+    outcode = subprocess.call('git stash > /dev/null', shell=True)
+    outcode = subprocess.call('git pull --rebase', shell=True)
+    outcode = subprocess.call('git stash apply > /dev/null', shell=True)
+    outcode = subprocess.call('git stash clear > /dev/null', shell=True)
+    os.chdir(cwd)
+    if not outcode:
+        if os.path.exists(OFFLINE_FILE):
+            os.remove(OFFLINE_FILE)
+    else:
+        if not os.path.exists(OFFLINE_FILE):
+            open(OFFLINE_FILE, 'w')
+            print 'Could not fetch from the remote repository'
+        else:
+            LOG.info('Could not fetch from the remote repository')
+
+
+def run_push(repo_path):
+    """ Run the git push command. """
+    cwd = os.getcwd()
+    os.chdir(repo_path)
+    outcode = subprocess.call('git push', shell=True)
+    os.chdir(cwd)
 
 
 class GitSync(object):
@@ -67,62 +99,53 @@ class GitSync(object):
                 'The indicated working directory does not exists: %s' %
                 reponame)
         try:
-            repo = Repo(reponame)
-        except InvalidGitRepositoryError:
+            repo = Repository(reponame)
+        except Exception, err:
+            print err
             raise GitSyncError(
                 'The indicated working directory is not a valid git '\
                 'repository: %s' %
                 reponame)
 
+        run_pull_rebase(repo.workdir)
+
         index = repo.index
         docommit = False
         origin = None
 
-        if repo.remotes and repo.remotes.origin:
-            origin = repo.remotes.origin
-            ## fetch and pull/rebase from the remote
-            try:
-                origin.fetch()
-                if not repo.is_dirty():
-                    origin.pull(rebase=True)
-                if os.path.exists(OFFLINE_FILE):
-                    os.remove(OFFLINE_FILE)
-            except AssertionError:
-                if not os.path.exists(OFFLINE_FILE):
-                    open(OFFLINE_FILE, 'w')
-                    print 'Could not fetch from the remote repository'
-                else:
-                    self.log.info('Could not fetch from the remote repository')
-
-        ## Add all untracked files
-        if repo.untracked_files:
-            self.log.info('Adding files %s' % repo.untracked_files)
-            index.add(repo.untracked_files)
-            docommit = True
-        ## Add all files changed
-        if repo.is_dirty():
-            self.log.info('Repo is dirty, processing files')
-            docommit = True
-            for (path, stage), entry in index.entries.iteritems():
-                path = repo.working_dir + '/' + path
-                if os.path.exists(path):
-                    index.add([path])
-                else:
-                    index.remove([path])
+        index = repo.index
+        ## Add or remove to staging the files according to their status
+        if repo.status:
+            status = repo.status()
+            for filepath, flag in status.items():
+                if flag == GIT_STATUS_WT_DELETED:
+                    self.log.info('Removing files %s' % filepath)
+                    del index[filepath]
+                elif flag == GIT_STATUS_WT_NEW:
+                    self.log.info('Adding files %s' % filepath)
+                    index.add(filepath)
+                elif flag == GIT_STATUS_WT_MODIFIED:
+                    self.log.info('Modifying files %s' % filepath)
+                    index.add(filepath)
+                docommit = True
+        index.write()
+        tree = index.write_tree()
 
         if docommit:
+            head = repo.lookup_reference('HEAD')
+            head = head.resolve()
+            commit = repo[head.oid]
             msg = strftime('Commit: %a, %d %b %Y %H:%M:%S +0000',
                 gmtime())
+            committer = Signature('gitsync', 'root@localhost', time(), 0)
             self.log.info('Doing commit: %s' % msg)
-            index.commit(msg)
+            sha = repo.create_commit('refs/heads/master', committer,
+                committer, msg, tree, [head.hex])
+            commit = repo[sha]
             ## if there is a remote, push to it
-            if origin and not os.path.exists(OFFLINE_FILE):
-                try:
-                    origin.pull(rebase=True)
-                    origin.push()
-                except GitCommandError:
-                    raise GitSyncError(
-                    'Could not push into the remote repository')
+            if not os.path.exists(OFFLINE_FILE):
+                run_pull_rebase(repo.workdir)
+                run_push(repo.workdir)
         else:
             self.log.info('No changes found')
 
@@ -221,6 +244,7 @@ class Settings(object):
 
 
 if __name__ == '__main__':
+    #LOG.setLevel(logging.DEBUG)
     try:
         GitSync()
     except GitSyncError, msg:
