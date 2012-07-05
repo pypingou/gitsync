@@ -132,13 +132,15 @@ class GitSync(object):
                 if flag == GIT_STATUS_WT_DELETED:
                     self.log.info('Removing files %s' % filepath)
                     del index[filepath]
+                    docommit = True
                 elif flag == GIT_STATUS_WT_NEW:
                     self.log.info('Adding files %s' % filepath)
                     index.add(filepath)
+                    docommit = True
                 elif flag == GIT_STATUS_WT_MODIFIED:
                     self.log.info('Modifying files %s' % filepath)
                     index.add(filepath)
-                docommit = True
+                    docommit = True
         index.write()
         tree = index.write_tree()
 
