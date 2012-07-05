@@ -40,6 +40,17 @@ SETTINGS_FILE = os.path.join(os.environ['HOME'], '.config',
 OFFLINE_FILE = os.path.join(os.environ['HOME'], '.config',
                     'gitsync.offline')
 
+def run_cmd(cmd):
+    """ Run a given command using the popen module.
+    """
+    LOG.debug('run cmd: `%s`' % ' '.join(cmd))
+    process = subprocess.Popen(cmd,
+        stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE)
+    if not process.returncode:
+        LOG.info('OUTPUT: ' + process.communicate()[0].strip())
+    return process.returncode
+
 
 def run_pull_rebase(repo_path):
     """ Run the git pull --rebase command and react accordingly to the
@@ -47,12 +58,12 @@ def run_pull_rebase(repo_path):
     """
     cwd = os.getcwd()
     os.chdir(repo_path)
-    outcode = subprocess.call('git stash > /dev/null', shell=True)
-    outcode = subprocess.call('git pull --rebase', shell=True)
-    outcode = subprocess.call('git stash apply > /dev/null', shell=True)
-    outcode = subprocess.call('git stash clear > /dev/null', shell=True)
+    run_cmd(['git', 'stash'])
+    outcode_pull = run_cmd(['git', 'pull', '--rebase'])
+    run_cmd(['git', 'stash', 'apply'])
+    run_cmd(['git', 'stash', 'clear'])
     os.chdir(cwd)
-    if not outcode:
+    if not outcode_pull:
         if os.path.exists(OFFLINE_FILE):
             os.remove(OFFLINE_FILE)
     else:
