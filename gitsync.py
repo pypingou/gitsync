@@ -107,6 +107,7 @@ def run_push(repo_path):
     os.chdir(repo_path)
     outcode = subprocess.call('git push', shell=True)
     os.chdir(cwd)
+    return outcode
 
 
 def docommit(repo, index, msg):
