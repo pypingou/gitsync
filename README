@@ -17,8 +17,10 @@ INSTALL
 == Dependencies
 
 * Python2
-    (tested on 2.6.6)
-* GitPython 0.3.2
+    (tested on 2.6.6 & 2.7.5)
+* pygit2
+    (tested with 0.20.3)
+
 
 == Install the program
 
