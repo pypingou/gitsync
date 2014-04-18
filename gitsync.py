@@ -299,12 +299,12 @@ class Settings(object):
         """
         parser = ConfigParser.ConfigParser()
         configfile = os.path.join(os.environ['HOME'], configfile)
-        isNew = self.create_conf(configfile)
+        is_new = self.create_conf(configfile)
         parser.read(configfile)
         if not parser.has_section(sec):
             parser.add_section(sec)
         self.populate(parser, sec)
-        if isNew:
+        if is_new:
             self.save_config(configfile, parser)
 
     def create_conf(self, configfile):
@@ -315,9 +315,9 @@ class Settings(object):
         :arg configfile, name of the configuration file looked for.
         """
         if not os.path.exists(configfile):
-            dn = os.path.dirname(configfile)
-            if not os.path.exists(dn):
-                os.makedirs(dn)
+            dirname = os.path.dirname(configfile)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
             return True
         return False
 
@@ -332,10 +332,10 @@ class Settings(object):
             parser.write(conf)
 
     def __getitem__(self, key):
-        hash = self._get_hash(key)
-        if not hash:
+        hashstr = self._get_hash(key)
+        if not hashstr:
             raise KeyError(key)
-        return self._dict.get(hash)
+        return self._dict.get(hashstr)
 
     def populate(self, parser, section):
         """Set option values from a INI file section.
