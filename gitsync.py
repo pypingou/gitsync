@@ -35,10 +35,6 @@ from pygit2 import (GIT_STATUS_WT_NEW, GIT_STATUS_WT_DELETED,
 # Initial simple logging stuff
 logging.basicConfig()
 LOG = logging.getLogger('gitsync')
-if '--debug' in sys.argv or '-d' in sys.argv:
-    LOG.setLevel(logging.DEBUG)
-elif '--verbose' in sys.argv or '-v' in sys.argv:
-    LOG.setLevel(logging.INFO)
 
 SETTINGS_FILE = os.path.join(
     os.environ['HOME'], '.config', 'gitsync')
