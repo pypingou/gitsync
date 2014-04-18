@@ -5,7 +5,7 @@
 """
 # gitsync - a git-based synchronisation deamon.
 #
-# Copyright (C) 2011 Pierre-Yves Chibon
+# Copyright (C) 2011-2014 Pierre-Yves Chibon
 # Author: Pierre-Yves Chibon <pingou@pingoured.fr>
 #
 # This program is free software; you can redistribute it and/or modify
