@@ -20,7 +20,8 @@ INSTALL
     (tested on 2.6.6 & 2.7.5)
 * pygit2
     (tested with 0.20.3)
-
+* watchdog
+    (tested with 0.7.1)
 
 == Install the program
 
@@ -70,6 +71,7 @@ there will likely be a conflict in git. If gitsync cannot push to
 the remote repo, it will say so and that will be up to you to fix
 the git repo.
 ====================================================================
+
 
 * This program is bug free of course but may contain some random features
 if you face one of them and can reproduce it, please let us know. We will
