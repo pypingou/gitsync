@@ -19,7 +19,7 @@
 
 from pygit2 import Repository, Signature
 from pygit2 import (GIT_STATUS_WT_NEW, GIT_STATUS_WT_DELETED,
-    GIT_STATUS_WT_MODIFIED)
+                    GIT_STATUS_WT_MODIFIED)
 from time import gmtime, strftime, time
 import ConfigParser
 import logging
@@ -36,16 +36,18 @@ if '--debug' in sys.argv or '-d' in sys.argv:
 elif '--verbose' in sys.argv or '-v' in sys.argv:
     LOG.setLevel(logging.INFO)
 
-SETTINGS_FILE = os.path.join(os.environ['HOME'], '.config',
-                    'gitsync')
-OFFLINE_FILE = os.path.join(os.environ['HOME'], '.config',
-                    'gitsync.offline')
+SETTINGS_FILE = os.path.join(
+    os.environ['HOME'], '.config', 'gitsync')
+OFFLINE_FILE = os.path.join(
+    os.environ['HOME'], '.config', 'gitsync.offline')
+
 
 def run_cmd(cmd):
     """ Run a given command using the popen module.
     """
     LOG.debug('run cmd: `%s`' % ' '.join(cmd))
-    process = subprocess.Popen(cmd,
+    process = subprocess.Popen(
+        cmd,
         stderr=subprocess.STDOUT,
         stdout=subprocess.PIPE)
     if not process.returncode:
@@ -61,8 +63,7 @@ def run_pull_rebase(repo_path):
     os.chdir(repo_path)
     run_cmd(['git', 'stash'])
     outcode_pull = run_cmd(['git', 'pull', '--rebase'])
-    run_cmd(['git', 'stash', 'apply'])
-    run_cmd(['git', 'stash', 'clear'])
+    run_cmd(['git', 'stash', 'pop'])
     os.chdir(cwd)
     if not outcode_pull:
         if os.path.exists(OFFLINE_FILE):
@@ -81,6 +82,18 @@ def run_push(repo_path):
     os.chdir(repo_path)
     outcode = subprocess.call('git push', shell=True)
     os.chdir(cwd)
+
+
+def docommit(repo, index, msg):
+    index.write()
+    tree = index.write_tree()
+    head = repo.lookup_reference('HEAD').get_object()
+    commit = repo[head.oid]
+    committer = Signature('gitsync', 'root@localhost', time(), 0)
+    LOG.info('Doing commit: %s' % msg)
+    sha = repo.create_commit(
+        'refs/heads/master', committer, committer, msg, tree, [head.hex])
+    commit = repo[sha]
 
 
 class GitSync(object):
@@ -115,14 +128,13 @@ class GitSync(object):
         except Exception, err:
             print err
             raise GitSyncError(
-                'The indicated working directory is not a valid git '\
-                'repository: %s' %
-                reponame)
+                'The indicated working directory is not a valid git '
+                'repository: %s' % reponame)
 
         run_pull_rebase(repo.workdir)
 
         index = repo.index
-        docommit = False
+        dopush = False
         origin = None
 
         index = repo.index
@@ -131,37 +143,28 @@ class GitSync(object):
             status = repo.status()
             for filepath, flag in status.items():
                 if flag == GIT_STATUS_WT_DELETED:
-                    self.log.info('Removing files %s' % filepath)
+                    msg = 'Remove file %s' % filepath
+                    self.log.info(msg)
                     del index[filepath]
-                    docommit = True
+                    docommit(repo, index, msg)
+                    dopush = True
                 elif flag == GIT_STATUS_WT_NEW:
-                    self.log.info('Adding files %s' % filepath)
+                    msg = 'Add file %s' % filepath
+                    self.log.info(msg)
                     index.add(filepath)
-                    docommit = True
+                    docommit(repo, index, msg)
+                    dopush = True
                 elif flag == GIT_STATUS_WT_MODIFIED:
-                    self.log.info('Modifying files %s' % filepath)
+                    msg = 'Change file %s' % filepath
+                    self.log.info(msg)
                     index.add(filepath)
-                    docommit = True
-        index.write()
-        tree = index.write_tree()
+                    docommit(repo, index, msg)
+                    dopush = True
 
-        if docommit:
-            head = repo.lookup_reference('HEAD')
-            head = head.resolve()
-            commit = repo[head.oid]
-            msg = strftime('Commit: %a, %d %b %Y %H:%M:%S +0000',
-                gmtime())
-            committer = Signature('gitsync', 'root@localhost', time(), 0)
-            self.log.info('Doing commit: %s' % msg)
-            sha = repo.create_commit('refs/heads/master', committer,
-                committer, msg, tree, [head.hex])
-            commit = repo[sha]
-            ## if there is a remote, push to it
-            if not os.path.exists(OFFLINE_FILE):
-                run_pull_rebase(repo.workdir)
-                run_push(repo.workdir)
-        else:
-            self.log.info('No changes found')
+        ## if there is a remote, push to it
+        if dopush and not os.path.exists(OFFLINE_FILE):
+            run_pull_rebase(repo.workdir)
+            run_push(repo.workdir)
 
 
 class GitSyncError(Exception):
@@ -186,8 +189,7 @@ class Settings(object):
         This instanciate the Settings object and load into the _dict
         attributes the default configuration which each available option.
         """
-        self._dict = {'work_dir': self.work_dir,
-                     }
+        self._dict = {'work_dir': self.work_dir}
         self.load_config(SETTINGS_FILE, 'gitsync')
 
     def load_config(self, configfile, sec):
@@ -258,7 +260,7 @@ class Settings(object):
 
 
 if __name__ == '__main__':
-    #LOG.setLevel(logging.DEBUG)
+    # LOG.setLevel(logging.DEBUG)
     try:
         GitSync()
     except GitSyncError, msg:
