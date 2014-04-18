@@ -16,6 +16,7 @@
 # license.
 """
 
+import argparse
 import ConfigParser
 import logging
 import os
@@ -42,6 +43,27 @@ SETTINGS_FILE = os.path.join(
     os.environ['HOME'], '.config', 'gitsync')
 OFFLINE_FILE = os.path.join(
     os.environ['HOME'], '.config', 'gitsync.offline')
+
+
+def get_arguments():
+    ''' Set the command line parser and retrieve the arguments provided
+    by the command line.
+    '''
+    parser = argparse.ArgumentParser(
+        description='gitsync')
+    parser.add_argument(
+        '--config', dest='config', default=SETTINGS_FILE,
+        help='Configuration file to use instead of `%s`.' % SETTINGS_FILE)
+    parser.add_argument(
+        '--info', dest='info', action='store_true',
+        default=False,
+        help='Expand the level of information returned')
+    parser.add_argument(
+        '--debug', dest='debug', action='store_true',
+        default=False,
+        help='Expand even more the level of information returned')
+
+    return parser.parse_args()
 
 
 def run_cmd(cmd):
@@ -103,12 +125,13 @@ class GitSync(object):
     set the deamon, manage the Git repo.
     """
 
-    def __init__(self):
+    def __init__(self, configfile=SETTINGS_FILE):
         self.log = LOG
-        self.settings = Settings()
+        self.settings = Settings(configfile)
         if not self.settings.work_dir:
             raise GitSyncError(
-                'No git repository set in %s' % SETTINGS_FILE)
+                'No git repository set in %s' % configfile)
+
         for repo in self.settings.work_dir.split(','):
             if repo.strip():
                 self.update_repo(os.path.expanduser(repo.strip()))
@@ -186,13 +209,13 @@ class Settings(object):
     # Work directory
     work_dir = ''
 
-    def __init__(self):
+    def __init__(self, configfile=SETTINGS_FILE):
         """Constructor of the Settings object.
         This instanciate the Settings object and load into the _dict
         attributes the default configuration which each available option.
         """
         self._dict = {'work_dir': self.work_dir}
-        self.load_config(SETTINGS_FILE, 'gitsync')
+        self.load_config(configfile, 'gitsync')
 
     def load_config(self, configfile, sec):
         """Load the configuration in memory.
@@ -261,9 +284,26 @@ class Settings(object):
                 parser.set(section, name, self._dict[name])
 
 
-if __name__ == '__main__':
-    # LOG.setLevel(logging.DEBUG)
+def main():
+    """ Main function of the programm.
+    """
+    # Retrieve arguments
+    args = get_arguments()
+
+    global LOG
+    if args.debug:
+        LOG.setLevel(logging.DEBUG)
+    else:
+        LOG.setLevel(logging.INFO)
+
     try:
-        GitSync()
+        GitSync(configfile=args.config)
     except GitSyncError, msg:
         print msg
+        return 1
+
+    return 0
+
+
+if __name__ == '__main__':
+    main()
