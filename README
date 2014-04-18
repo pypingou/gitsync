@@ -44,14 +44,14 @@ origin or just local) and will be separated by a comma ',' in the list.
 ei:
   work_dir = /home/user/Notes, /home/user/Articles, /home/user/Scripts
 
-Then you can add the scheduler job, for example using cron, to run the
-synchronisation every 5 minutes:
-*/5 * * * * /home/user/bin/gitsync.py
-or
-*/5 * * * * /usr/local/bin/gitsync.py
+Then you can run gitsync as daemon using
+  /usr/local/bin/gitsync.py --daemon &
 
-You may want to add --verbose to get some output and eventually use
-cron to send you an email with that output. It is now up to you ;-)
+This will watch for changes on the filesystem and add/remove the files from
+the git repositories as they are added/updated/removed.
+
+You may want to add --verbose to get some output and eventually redirect
+them to a log file. It is now up to you ;-)
 
 
 My workflow here would be something like:
