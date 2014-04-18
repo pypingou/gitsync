@@ -22,13 +22,15 @@ import logging
 import os
 import subprocess
 import sys
+import time
 
-from time import gmtime, strftime, time
+import watchdog
+import watchdog.events
+from watchdog.observers import Observer
 
 from pygit2 import Repository, Signature
 from pygit2 import (GIT_STATUS_WT_NEW, GIT_STATUS_WT_DELETED,
                     GIT_STATUS_WT_MODIFIED)
-
 
 
 # Initial simple logging stuff
@@ -62,6 +64,10 @@ def get_arguments():
         '--debug', dest='debug', action='store_true',
         default=False,
         help='Expand even more the level of information returned')
+    parser.add_argument(
+        '--daemon', dest='daemon', action='store_true',
+        default=False,
+        help='Run gitsync in a daemon mode')
 
     return parser.parse_args()
 
@@ -113,11 +119,73 @@ def docommit(repo, index, msg):
     tree = index.write_tree()
     head = repo.lookup_reference('HEAD').get_object()
     commit = repo[head.oid]
-    committer = Signature('gitsync', 'root@localhost', time(), 0)
+    committer = Signature('gitsync', 'root@localhost', time.time(), 0)
     LOG.info('Doing commit: %s' % msg)
     sha = repo.create_commit(
         'refs/heads/master', committer, committer, msg, tree, [head.hex])
     commit = repo[sha]
+    return commit
+
+
+class GitSyncEventHandler(watchdog.events.FileSystemEventHandler):
+    """ Dedicated Event Handler for gitsync. """
+
+    def __init__(self, repopath):
+        """ Constructor for the GitSyncEventHandler class.
+
+        Instanciate a pygit2.Repository object using the path to the repo
+        provided.
+        """
+
+        self.repo = Repository(repopath)
+        self.log = LOG
+
+    #def on_created(self, event):
+        #""" Upon creation, add the file to the git repo. """
+        #print 'on_created'
+        #print event
+
+    def on_deleted(self, event):
+        """ Upon deletion, delete the file from the git repo. """
+        self.log.debug('on_deleted')
+        self.log.debug(event)
+        if '.git' in event.src_path:
+            return
+
+        filename = event.src_path.split(self.repo.workdir)[1]
+        msg = 'Remove file %s' % filename
+        self.log.info(msg)
+        index = self.repo.index
+        index.remove(filename)
+        docommit(self.repo, self.repo.index, msg)
+
+    def on_modified(self, event):
+        """ Upon modification, update the file in the git repo. """
+        self.log.debug('on_modified')
+        self.log.debug(event)
+        if '.git' in event.src_path:
+            return
+
+        filename = event.src_path.split(self.repo.workdir)[1]
+        msg = 'Update file %s' % filename
+        self.log.info(msg)
+        self.repo.index.add(filename)
+        docommit(self.repo, self.repo.index, msg)
+
+    def on_moved(self, event):
+        """ Upon move, update the file in the git repo. """
+        self.log.debug('on_moved')
+        self.log.debug(event)
+        if '.git' in event.src_path:
+            return
+
+        filename_from = event.src_path.split(self.repo.workdir)[1]
+        filename_to = event.dest_path.split(self.repo.workdir)[1]
+        msg = 'Move file from %s to %s' % (filename_from, filename_to)
+        self.log.info(msg)
+        self.repo.index.remove(filename_from)
+        self.repo.index.add(filename_to)
+        docommit(self.repo, self.repo.index, msg)
 
 
 class GitSync(object):
@@ -125,16 +193,37 @@ class GitSync(object):
     set the deamon, manage the Git repo.
     """
 
-    def __init__(self, configfile=SETTINGS_FILE):
+    def __init__(self, configfile=SETTINGS_FILE, daemon=False):
         self.log = LOG
         self.settings = Settings(configfile)
         if not self.settings.work_dir:
             raise GitSyncError(
                 'No git repository set in %s' % configfile)
 
-        for repo in self.settings.work_dir.split(','):
-            if repo.strip():
-                self.update_repo(os.path.expanduser(repo.strip()))
+        if not daemon:
+            for repo in self.settings.work_dir.split(','):
+                if repo.strip():
+                    self.update_repo(os.path.expanduser(repo.strip()))
+        else:
+            observers = []
+            for repo in self.settings.work_dir.split(','):
+                repo = repo.strip()
+                if repo:
+                    observer = Observer()
+                    observer.schedule(
+                        GitSyncEventHandler(repo), repo, recursive=True)
+                    observer.start()
+                    observers.append(observer)
+
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                for observer in observers:
+                    observer.stop()
+            for observer in observers:
+                observer.join()
+
 
     def update_repo(self, reponame):
         """ For a given path to a repo, pull/rebase the last changes if
@@ -297,7 +386,7 @@ def main():
         LOG.setLevel(logging.INFO)
 
     try:
-        GitSync(configfile=args.config)
+        GitSync(configfile=args.config, daemon=args.daemon)
     except GitSyncError, msg:
         print msg
         return 1
