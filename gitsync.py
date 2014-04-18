@@ -16,16 +16,18 @@
 # license.
 """
 
-
-from pygit2 import Repository, Signature
-from pygit2 import (GIT_STATUS_WT_NEW, GIT_STATUS_WT_DELETED,
-                    GIT_STATUS_WT_MODIFIED)
-from time import gmtime, strftime, time
 import ConfigParser
 import logging
 import os
 import subprocess
 import sys
+
+from time import gmtime, strftime, time
+
+from pygit2 import Repository, Signature
+from pygit2 import (GIT_STATUS_WT_NEW, GIT_STATUS_WT_DELETED,
+                    GIT_STATUS_WT_MODIFIED)
+
 
 
 # Initial simple logging stuff
