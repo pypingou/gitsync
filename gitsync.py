@@ -379,7 +379,7 @@ def main():
     try:
         while True:
             time.sleep(1)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, Exception):
         LOG.info('Stopping thread')
         for observer in gitsync.observers:
             observer.stop()
