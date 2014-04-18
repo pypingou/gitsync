@@ -147,10 +147,10 @@ class GitSyncEventHandler(watchdog.events.FileSystemEventHandler):
 
     def on_deleted(self, event):
         """ Upon deletion, delete the file from the git repo. """
-        self.log.debug('on_deleted')
-        self.log.debug(event)
         if '.git' in event.src_path:
             return
+        self.log.debug('on_deleted')
+        self.log.debug(event)
 
         filename = event.src_path.split(self.repo.workdir)[1]
         msg = 'Remove file %s' % filename
@@ -161,10 +161,10 @@ class GitSyncEventHandler(watchdog.events.FileSystemEventHandler):
 
     def on_modified(self, event):
         """ Upon modification, update the file in the git repo. """
-        self.log.debug('on_modified')
-        self.log.debug(event)
         if '.git' in event.src_path:
             return
+        self.log.debug('on_modified')
+        self.log.debug(event)
 
         filename = event.src_path.split(self.repo.workdir)[1]
         msg = 'Update file %s' % filename
@@ -174,10 +174,10 @@ class GitSyncEventHandler(watchdog.events.FileSystemEventHandler):
 
     def on_moved(self, event):
         """ Upon move, update the file in the git repo. """
-        self.log.debug('on_moved')
-        self.log.debug(event)
         if '.git' in event.src_path:
             return
+        self.log.debug('on_moved')
+        self.log.debug(event)
 
         filename_from = event.src_path.split(self.repo.workdir)[1]
         filename_to = event.dest_path.split(self.repo.workdir)[1]
@@ -200,12 +200,12 @@ class GitSync(object):
             raise GitSyncError(
                 'No git repository set in %s' % configfile)
 
+        self.observers = []
         if not daemon:
             for repo in self.settings.work_dir.split(','):
                 if repo.strip():
                     self.update_repo(os.path.expanduser(repo.strip()))
         else:
-            observers = []
             for repo in self.settings.work_dir.split(','):
                 repo = repo.strip()
                 if repo:
@@ -213,17 +213,7 @@ class GitSync(object):
                     observer.schedule(
                         GitSyncEventHandler(repo), repo, recursive=True)
                     observer.start()
-                    observers.append(observer)
-
-            try:
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                for observer in observers:
-                    observer.stop()
-            for observer in observers:
-                observer.join()
-
+                    self.observers.append(observer)
 
     def update_repo(self, reponame):
         """ For a given path to a repo, pull/rebase the last changes if
@@ -386,10 +376,22 @@ def main():
         LOG.setLevel(logging.INFO)
 
     try:
-        GitSync(configfile=args.config, daemon=args.daemon)
+        gitsync = GitSync(configfile=args.config, daemon=args.daemon)
     except GitSyncError, msg:
         print msg
         return 1
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        LOG.info('Stopping thread')
+        for observer in gitsync.observers:
+            observer.stop()
+
+    LOG.debug('Waiting for threads to stop')
+    for observer in gitsync.observers:
+        observer.join()
 
     return 0
 
