@@ -1,8 +1,8 @@
-%define alphatag 20120102
+%define alphatag 20140418
 
 Name:           gitsync
-Version:        0.0.1
-Release:        0.2.%{alphatag}git%{?dist}
+Version:        0.0.2
+Release:        0.1.%{alphatag}git%{?dist}
 Summary:        Automated git-based synchronization
 
 License:        GPLv3+
@@ -13,7 +13,8 @@ URL:            http://ambre.pingoured.fr/cgit/gitsync.git
 # cd gitsync && git archive --format=tar --prefix=gitsync-0.0.1/ fd39ef44ed57a4ede4f586a852598479efa9db13 > ../gitsync-20120102.tar.bz2
 Source0:        gitsync-%{alphatag}.tar.bz2
 
-Requires:       GitPython
+Requires:       python-pytgit2
+Requires:       python-watchdog
 
 BuildArch:      noarch
 BuildRequires:  python-devel
@@ -43,13 +44,17 @@ rm -rf %{buildroot}
 mkdir -p  %{buildroot}%{_bindir}
 install -m 755 %{name}.py %{buildroot}%{_bindir}/%{name}
 
- 
+
 %files
 %doc README LICENSE
 %{_bindir}/%{name}
 
 
 %changelog
+* Fri April 18 2014 Pierre-Yves Chibon <pingou AT pingoured DOT fr> - 0.0.2-0.1.20140418git
+- Bump to a 0.0.2 release
+- Add dependency to python-watchdog and python-pygit2
+
 * Tue Jan 03 2012 Pierre-Yves Chibon <pingou AT pingoured DOT fr> - 0.0.1-0.2.20120102git
 - Fix the Requires of the spec (to GitPython which will bring git and python)
 
