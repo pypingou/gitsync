@@ -27,10 +27,12 @@ requires = get_requires()
 
 setup(
     name='gitsync',
+    description='Keep your git folder always in sync with its server',
     version=__version__,
     author='Pierre-Yves Chibon',
     author_email='pingou@pingoured.fr',
     url='https://github.com/pypingou/gitsync',
+    download_url = 'https://pypi.python.org/pypi/gitsync',
     py_modules=['gitsync'],
     install_requires=requires,
     entry_points={
