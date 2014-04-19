@@ -40,6 +40,8 @@ LOG = logging.getLogger('gitsync')
 
 SETTINGS_FILE = os.path.join(
     os.path.expanduser('~'), '.config', 'gitsync')
+if not os.path.exists(SETTINGS_FILE):
+    SETTINGS_FILE = '/etc/gitsync.cfg'
 
 OFFLINE_FILE = os.path.join(
     os.environ['HOME'], '.config', 'gitsync.offline')
