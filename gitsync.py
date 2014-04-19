@@ -39,7 +39,7 @@ logging.basicConfig()
 LOG = logging.getLogger('gitsync')
 
 SETTINGS_FILE = os.path.join(
-    os.environ['HOME'], '.config', 'gitsync')
+    os.path.expanduser('~'), '.config', 'gitsync')
 
 OFFLINE_FILE = os.path.join(
     os.environ['HOME'], '.config', 'gitsync.offline')
