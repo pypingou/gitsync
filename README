@@ -1,5 +1,5 @@
 GitSync
-======
+=======
 
 GitSync aims at providing an automated git-based synchronization.
 Embedded in a scheduler (such as cron) it watch the content of a
@@ -12,7 +12,7 @@ sparkleshare but:
 - in git (get real track changes).
 
 INSTALL
-======
+=======
 
 == Dependencies
 
