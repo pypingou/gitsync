@@ -31,12 +31,16 @@ from pygit2 import (GIT_STATUS_WT_NEW, GIT_STATUS_WT_DELETED,
                     GIT_STATUS_WT_MODIFIED)
 
 
+__version__ = '1.0.0'
+
+
 # Initial simple logging stuff
 logging.basicConfig()
 LOG = logging.getLogger('gitsync')
 
 SETTINGS_FILE = os.path.join(
     os.environ['HOME'], '.config', 'gitsync')
+
 OFFLINE_FILE = os.path.join(
     os.environ['HOME'], '.config', 'gitsync.offline')
 
