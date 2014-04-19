@@ -1,1 +1,3 @@
-include LICENSE README
+include LICENSE README requirements.txt
+include gitsync.service
+include gitsync.spec
