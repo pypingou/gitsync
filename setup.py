@@ -32,7 +32,7 @@ setup(
     author='Pierre-Yves Chibon',
     author_email='pingou@pingoured.fr',
     url='https://github.com/pypingou/gitsync',
-    download_url = 'https://pypi.python.org/pypi/gitsync',
+    download_url='https://pypi.python.org/pypi/gitsync',
     py_modules=['gitsync'],
     install_requires=requires,
     entry_points={
