@@ -20,6 +20,7 @@ import ConfigParser
 import logging
 import os
 import subprocess
+import threading
 import time
 
 import watchdog
@@ -45,6 +46,9 @@ if not os.path.exists(SETTINGS_FILE):
 
 OFFLINE_FILE = os.path.join(
     os.environ['HOME'], '.config', 'gitsync.offline')
+
+# Five seconds of sleep before pushing.
+WAIT_N = 10
 
 
 def get_arguments():
@@ -140,11 +144,35 @@ class GitSyncEventHandler(watchdog.events.FileSystemEventHandler):
 
         self.repo = Repository(repopath)
         self.log = LOG
+        self.do_push = False
+        self.thread = None
 
-    #def on_created(self, event):
-        #""" Upon creation, add the file to the git repo. """
-        #print 'on_created'
-        #print event
+    def pusher_thread(self):
+        self.log.debug("pusher thread is waiting %i seconds", WAIT_N)
+        self.log.debug("pusher thread waking up...")
+
+        if self.do_push:
+            self.log.debug("Pushing")
+            if not os.path.exists(OFFLINE_FILE):
+                run_pull_rebase(self.repo.workdir)
+                run_push(self.repo.workdir)
+
+            # Set this flag back to false when we're done
+            self.do_push = False
+            self.log.debug("  do push: %s", self.do_push)
+        else:
+            self.log.debug("  (push not actually set.. bailing out.)")
+
+        return
+
+    def on_any_event(self, event):
+        if '.git' in event.src_path:
+            return
+        if not self.do_push:
+            self.log.debug("Something changed, prepare to push")
+            self.do_push = True
+            self.thread = threading.Timer(WAIT_N, function=self.pusher_thread)
+            self.thread.start()
 
     def on_deleted(self, event):
         """ Upon deletion, delete the file from the git repo. """
