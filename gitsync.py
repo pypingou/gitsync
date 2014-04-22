@@ -238,6 +238,9 @@ class GitSync(object):
             for repo in self.settings.work_dir.split(','):
                 repo = repo.strip()
                 if repo:
+                    # First update the repo as it is now
+                    self.update_repo(os.path.expanduser(repo))
+                    # Then starts the daemon mode
                     observer = Observer()
                     observer.schedule(
                         GitSyncEventHandler(repo), repo, recursive=True)
