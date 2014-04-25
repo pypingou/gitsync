@@ -1,15 +1,17 @@
 GitSync
 =======
 
-GitSync aims at providing an automated git-based synchronization.
-Embedded in a scheduler (such as cron) it watch the content of a
-folder and add/remove/commit the changes which are made there.
+GitSync aims at providing an automated git-based synchronization system.
+It watches the content of one or more git repository and add/remove/commit
+the changes which are made there.
 
 This way it kind of provide a similar service then dropbox or
 sparkleshare but:
 - in python (no mono-pile to install)
-- in cron (set your frequency as desired)
+- in cron or using file system watch (set your frequency as desired or get
+    the changes in in real time)
 - in git (get real track changes).
+
 
 INSTALL
 =======
@@ -28,8 +30,9 @@ INSTALL
 === Link from git
 The easiest way is just to clone the git repo and make a link from ~/bin
 or /usr/local/bin to the gitsync.py file.
-At the moment the project does not provide any setup.py but eventually
-that will change.
+
+== Via the setup.py
+Clone the source and install them simply using python setup.py install.
 
 === Via rpm.
 Make a tarball of the project and run rpmbuild -ts <tarball>.
