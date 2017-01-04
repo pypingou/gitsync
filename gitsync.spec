@@ -1,5 +1,5 @@
 Name:               gitsync
-Version:            1.0.1
+Version:            1.0.2
 Release:            1%{?dist}
 Summary:            Automated git-based synchronization
 
@@ -67,6 +67,10 @@ install -m 644 gitsync.service \
 
 
 %changelog
+* Wed Jan 04 2017 Pierre-Yves Chibon <pingou@pingoured.fr> - 1.0.2-1
+- Update to 1.0.2
+- Fix the daemon mode when watching a folder where a file is deleted
+
 * Wed Jan 04 2017 Pierre-Yves Chibon <pingou@pingoured.fr> - 1.0.1-1
 - Update to 1.0.1
 

@@ -36,7 +36,7 @@ from pygit2 import (GIT_STATUS_WT_NEW, GIT_STATUS_WT_DELETED,
                     GIT_STATUS_WT_MODIFIED)
 
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 
 
 # Initial simple logging stuff
