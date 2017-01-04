@@ -5,7 +5,7 @@ Description=Service for keeping git repos in sync
 After=syslog.target network.target
 
 [Service]
-ExecStart=/usr/bin/gitsync --daemon --verbose > /var/log/gitsync &2
+ExecStart=/usr/bin/gitsync-cli --daemon --verbose > /var/log/gitsync &2
 
 [Install]
 WantedBy=multi-user.target
