@@ -199,7 +199,13 @@ class GitSyncEventHandler(watchdog.events.FileSystemEventHandler):
         self.log.debug('on_modified')
         self.log.debug(event)
 
-        filename = event.src_path.split(self.repo.workdir)[1]
+        path_split = event.src_path.split(self.repo.workdir)
+        if len(path_split) == 1:
+            msg = 'No file found in: %s' % path_split
+            self.log.debug(msg)
+            return
+
+        filename = path_split[1]
         msg = 'Update file %s' % filename
         self.log.info(msg)
         self.repo.index.add(filename)
