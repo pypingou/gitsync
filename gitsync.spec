@@ -1,5 +1,5 @@
 Name:               gitsync
-Version:            1.0.2
+Version:            1.1.0
 Release:            1%{?dist}
 Summary:            Automated git-based synchronization
 
@@ -67,6 +67,13 @@ install -m 644 gitsync.service \
 
 
 %changelog
+* Wed Jan 04 2017 Pierre-Yves Chibon <pingou@pingoured.fr> - 1.1.0-1
+- Update to 1.1.0
+- Rework the logic around updating the git repo to avoid un-needed stashing
+- Be consistent when being run in single-run mode or as daemon by using the
+  same code path
+- Fix error in the signature used when committing the changes.
+
 * Wed Jan 04 2017 Pierre-Yves Chibon <pingou@pingoured.fr> - 1.0.2-1
 - Update to 1.0.2
 - Fix the daemon mode when watching a folder where a file is deleted
