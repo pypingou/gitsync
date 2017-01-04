@@ -47,6 +47,13 @@ origin or just local) and will be separated by a comma ',' in the list.
 ei:
   work_dir = /home/user/Notes, /home/user/Articles, /home/user/Scripts
 
+Example file:
+
+  $ cat ~/.config/gitsync
+  [gitsync]
+  work_dir=/home/pingou/Documents/ConfNotes /home/pingou/Images/backup
+
+
 Then you can run gitsync as daemon using
   /usr/local/bin/gitsync.py --daemon &
 
