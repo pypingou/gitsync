@@ -16,7 +16,11 @@
 """
 
 import argparse
-import ConfigParser
+try:
+    import ConfigParser
+except ImportError:
+    # PY3
+    import configparser as ConfigParser
 import logging
 import os
 import subprocess
@@ -85,7 +89,7 @@ def run_cmd(cmd):
         stderr=subprocess.STDOUT,
         stdout=subprocess.PIPE)
     if not process.returncode:
-        LOG.info('OUTPUT: ' + process.communicate()[0].strip())
+        LOG.info('OUTPUT: ' + process.communicate()[0].strip().decode('utf-8'))
     return process.returncode
 
 
@@ -105,7 +109,7 @@ def run_pull_rebase(repo_path):
     else:
         if not os.path.exists(OFFLINE_FILE):
             open(OFFLINE_FILE, 'w')
-            print 'Could not fetch from the remote repository'
+            print('Could not fetch from the remote repository')
         else:
             LOG.info('Could not fetch from the remote repository')
 
@@ -261,8 +265,8 @@ class GitSync(object):
                 reponame)
         try:
             repo = Repository(reponame)
-        except Exception, err:
-            print err
+        except Exception as err:
+            print(err)
             raise GitSyncError(
                 'The indicated working directory is not a valid git '
                 'repository: %s' % reponame)
@@ -385,7 +389,7 @@ class Settings(object):
         else:
             opts = set()
 
-        for name in self._dict.iterkeys():
+        for name in self._dict:
             value = None
             if name in opts:
                 value = parser.get(section, name)
@@ -408,8 +412,8 @@ def main():
 
     try:
         gitsync = GitSync(configfile=args.config, daemon=args.daemon)
-    except GitSyncError, msg:
-        print msg
+    except GitSyncError as msg:
+        print(msg)
         return 1
 
     if args.daemon:
