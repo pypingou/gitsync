@@ -88,9 +88,10 @@ def run_cmd(cmd):
         cmd,
         stderr=subprocess.STDOUT,
         stdout=subprocess.PIPE)
+    output = process.communicate()[0].strip().decode('utf-8')
     if not process.returncode:
-        LOG.info('OUTPUT: ' + process.communicate()[0].strip().decode('utf-8'))
-    return process.returncode
+        LOG.info('OUTPUT: ' + output)
+    return (process.returncode, output)
 
 
 def run_pull_rebase(repo_path):
@@ -99,19 +100,29 @@ def run_pull_rebase(repo_path):
     """
     cwd = os.getcwd()
     os.chdir(repo_path)
-    run_cmd(['git', 'stash'])
-    outcode_pull = run_cmd(['git', 'pull', '--rebase'])
-    run_cmd(['git', 'stash', 'pop'])
-    os.chdir(cwd)
-    if not outcode_pull:
-        if os.path.exists(OFFLINE_FILE):
-            os.remove(OFFLINE_FILE)
-    else:
-        if not os.path.exists(OFFLINE_FILE):
-            open(OFFLINE_FILE, 'w')
-            print('Could not fetch from the remote repository')
+    run_cmd(['git', 'fetch'])
+    branch = run_cmd(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])[1]
+    lcl_hash = run_cmd(
+        ['git', 'log', '-1', '--pretty=oneline', branch]
+    )[1].split(' ')[0]
+    remote_hash = run_cmd(
+        ['git', 'log', '-1', '--pretty=oneline', 'origin', branch]
+    )[1].split(' ')[0]
+
+    if lcl_hash != remote_hash:
+        run_cmd(['git', 'stash'])
+        outcode_pull = run_cmd(['git', 'pull', '--rebase'])[0]
+        run_cmd(['git', 'stash', 'pop'])
+        os.chdir(cwd)
+        if not outcode_pull:
+            if os.path.exists(OFFLINE_FILE):
+                os.remove(OFFLINE_FILE)
         else:
-            LOG.info('Could not fetch from the remote repository')
+            if not os.path.exists(OFFLINE_FILE):
+                open(OFFLINE_FILE, 'w')
+                print('Could not fetch from the remote repository')
+            else:
+                LOG.info('Could not fetch from the remote repository')
 
 
 def run_push(repo_path):
@@ -134,6 +145,57 @@ def docommit(repo, index, msg):
         'refs/heads/master', committer, committer, msg, tree, [head.hex])
     commit = repo[sha]
     return commit
+
+
+def update_repo(reponame):
+    """ For a given path to a repo, pull/rebase the last changes if
+    it can, add/remove/commit the new changes and push them to the
+    remote repo if any.
+
+    :kwarg reponame, full path to a git repo.
+    """
+    LOG.info('Processing %s' % reponame)
+    if not os.path.exists(reponame):
+        raise GitSyncError(
+            'The indicated working directory does not exists: %s' %
+            reponame)
+    try:
+        repo = Repository(reponame)
+    except Exception as err:
+        print(err)
+        raise GitSyncError(
+            'The indicated working directory is not a valid git '
+            'repository: %s' % reponame)
+
+    index = repo.index
+    dopush = False
+    origin = None
+
+    index = repo.index
+    ## Add or remove to staging the files according to their status
+    if repo.status:
+        status = repo.status()
+        for filepath, flag in status.items():
+            if flag == GIT_STATUS_WT_DELETED:
+                msg = 'Remove file %s' % filepath
+                LOG.info(msg)
+                index.remove(filepath)
+                docommit(repo, index, msg)
+                dopush = True
+            elif flag == GIT_STATUS_WT_NEW:
+                msg = 'Add file %s' % filepath
+                LOG.info(msg)
+                index.add(filepath)
+                docommit(repo, index, msg)
+                dopush = True
+            elif flag == GIT_STATUS_WT_MODIFIED:
+                msg = 'Change file %s' % filepath
+                LOG.info(msg)
+                index.add(filepath)
+                docommit(repo, index, msg)
+                dopush = True
+
+    return dopush
 
 
 class GitSyncEventHandler(watchdog.events.FileSystemEventHandler):
@@ -185,12 +247,8 @@ class GitSyncEventHandler(watchdog.events.FileSystemEventHandler):
         self.log.debug('on_deleted')
         self.log.debug(event)
 
-        filename = event.src_path.split(self.repo.workdir)[1]
-        msg = 'Remove file %s' % filename
-        self.log.info(msg)
-        index = self.repo.index
-        index.remove(filename)
-        docommit(self.repo, self.repo.index, msg)
+
+        update_repo(self.repo.workdir)
 
     def on_modified(self, event):
         """ Upon modification, update the file in the git repo. """
@@ -199,17 +257,7 @@ class GitSyncEventHandler(watchdog.events.FileSystemEventHandler):
         self.log.debug('on_modified')
         self.log.debug(event)
 
-        path_split = event.src_path.split(self.repo.workdir)
-        if len(path_split) == 1:
-            msg = 'No file found in: %s' % path_split
-            self.log.debug(msg)
-            return
-
-        filename = path_split[1]
-        msg = 'Update file %s' % filename
-        self.log.info(msg)
-        self.repo.index.add(filename)
-        docommit(self.repo, self.repo.index, msg)
+        update_repo(self.repo.workdir)
 
     def on_moved(self, event):
         """ Upon move, update the file in the git repo. """
@@ -218,13 +266,7 @@ class GitSyncEventHandler(watchdog.events.FileSystemEventHandler):
         self.log.debug('on_moved')
         self.log.debug(event)
 
-        filename_from = event.src_path.split(self.repo.workdir)[1]
-        filename_to = event.dest_path.split(self.repo.workdir)[1]
-        msg = 'Move file from %s to %s' % (filename_from, filename_to)
-        self.log.info(msg)
-        self.repo.index.remove(filename_from)
-        self.repo.index.add(filename_to)
-        docommit(self.repo, self.repo.index, msg)
+        update_repo(self.repo.workdir)
 
 
 class GitSync(object):
@@ -239,78 +281,35 @@ class GitSync(object):
             raise GitSyncError(
                 'No git repository set in %s' % configfile)
 
+        def update_sync_repo(repo):
+            ''' Local, internal method used to do the initial sync of the
+            repo in daemon mode, or the sync in single-run mode.
+            '''
+            run_pull_rebase(repo)
+            dopush = update_repo(os.path.expanduser(repo))
+            ## if there is a remote, push to it
+            if dopush and not os.path.exists(OFFLINE_FILE):
+                run_pull_rebase(repo)
+                run_push(repo)
+
         self.observers = []
         if not daemon:
             for repo in self.settings.work_dir.split(','):
-                if repo.strip():
-                    self.update_repo(os.path.expanduser(repo.strip()))
+                repo = repo.strip()
+                if repo:
+                    update_sync_repo(repo)
         else:
             for repo in self.settings.work_dir.split(','):
                 repo = repo.strip()
                 if repo:
                     # First update the repo as it is now
-                    self.update_repo(os.path.expanduser(repo))
+                    update_sync_repo(repo)
                     # Then starts the daemon mode
                     observer = Observer()
                     observer.schedule(
                         GitSyncEventHandler(repo), repo, recursive=True)
                     observer.start()
                     self.observers.append(observer)
-
-    def update_repo(self, reponame):
-        """ For a given path to a repo, pull/rebase the last changes if
-        it can, add/remove/commit the new changes and push them to the
-        remote repo if any.
-
-        :kwarg reponame, full path to a git repo.
-        """
-        self.log.info('Processing %s' % reponame)
-        if not os.path.exists(reponame):
-            raise GitSyncError(
-                'The indicated working directory does not exists: %s' %
-                reponame)
-        try:
-            repo = Repository(reponame)
-        except Exception as err:
-            print(err)
-            raise GitSyncError(
-                'The indicated working directory is not a valid git '
-                'repository: %s' % reponame)
-
-        run_pull_rebase(repo.workdir)
-
-        index = repo.index
-        dopush = False
-        origin = None
-
-        index = repo.index
-        ## Add or remove to staging the files according to their status
-        if repo.status:
-            status = repo.status()
-            for filepath, flag in status.items():
-                if flag == GIT_STATUS_WT_DELETED:
-                    msg = 'Remove file %s' % filepath
-                    self.log.info(msg)
-                    del index[filepath]
-                    docommit(repo, index, msg)
-                    dopush = True
-                elif flag == GIT_STATUS_WT_NEW:
-                    msg = 'Add file %s' % filepath
-                    self.log.info(msg)
-                    index.add(filepath)
-                    docommit(repo, index, msg)
-                    dopush = True
-                elif flag == GIT_STATUS_WT_MODIFIED:
-                    msg = 'Change file %s' % filepath
-                    self.log.info(msg)
-                    index.add(filepath)
-                    docommit(repo, index, msg)
-                    dopush = True
-
-        ## if there is a remote, push to it
-        if dopush and not os.path.exists(OFFLINE_FILE):
-            run_pull_rebase(repo.workdir)
-            run_push(repo.workdir)
 
 
 class GitSyncError(Exception):
