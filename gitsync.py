@@ -4,7 +4,7 @@
 """
 # gitsync - a git-based synchronisation deamon.
 #
-# Copyright (C) 2011-2014 Pierre-Yves Chibon
+# Copyright (C) 2011-2016 Pierre-Yves Chibon
 # Author: Pierre-Yves Chibon <pingou@pingoured.fr>
 #
 # This program is free software; you can redistribute it and/or modify
@@ -32,7 +32,7 @@ from pygit2 import (GIT_STATUS_WT_NEW, GIT_STATUS_WT_DELETED,
                     GIT_STATUS_WT_MODIFIED)
 
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 
 # Initial simple logging stuff
@@ -401,7 +401,6 @@ def main():
     # Retrieve arguments
     args = get_arguments()
 
-    global LOG
     if args.debug:
         LOG.setLevel(logging.DEBUG)
     else:
@@ -413,13 +412,14 @@ def main():
         print msg
         return 1
 
-    try:
-        while True:
-            time.sleep(1)
-    except (KeyboardInterrupt, Exception):
-        LOG.info('Stopping thread')
-        for observer in gitsync.observers:
-            observer.stop()
+    if args.daemon:
+        try:
+            while True:
+                time.sleep(1)
+        except (KeyboardInterrupt, Exception):
+            LOG.info('Stopping thread')
+            for observer in gitsync.observers:
+                observer.stop()
 
     LOG.debug('Waiting for threads to stop')
     for observer in gitsync.observers:
