@@ -32,7 +32,7 @@ import watchdog
 import watchdog.events
 from watchdog.observers import Observer
 
-from pygit2 import Repository, Signature
+from pygit2 import Repository, Signature, Commit
 from pygit2 import (GIT_STATUS_WT_NEW, GIT_STATUS_WT_DELETED,
                     GIT_STATUS_WT_MODIFIED)
 
@@ -138,7 +138,7 @@ def run_push(repo_path):
 def docommit(repo, index, msg):
     index.write()
     tree = index.write_tree()
-    head = repo.lookup_reference('HEAD').get_object()
+    head = repo.lookup_reference('HEAD').peel(Commit)
     commit = repo[head.oid]
     committer = Signature(
         'gitsync',
